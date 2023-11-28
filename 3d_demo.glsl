@@ -1,3 +1,5 @@
+#iChannel0 "file://sdf.png"
+
 const int MAX_MARCHING_STEPS = 255;
 const float MIN_DIST = 0.0;
 const float MAX_DIST = 100.0;
@@ -11,6 +13,24 @@ float sdSphere(vec3 p, float r )
 {
   vec3 offset = vec3(0, 0, -2);
   return length(p - offset) - r;
+}
+
+vec2 uvSphere(vec3 p)
+{
+  vec2 uv;
+  vec3 n = normalize(p);
+  float theta = acos(n.z);
+  float totient = atan(n.y, n.x);
+  if (totient <0.) {
+    totient += radians(360.);
+  }
+
+  const float _1_PI = degrees(1./180.);
+
+  uv.x = totient*_1_PI*0.5;
+  uv.y = 1.-theta*_1_PI;
+
+  return uv;
 }
 
 float rayMarch(vec3 ro, vec3 rd, float start, float end) {
@@ -46,7 +66,7 @@ struct Camera
 
 void init_main_camera()
 {
-  main_camera.fov = 90.;
+  main_camera.fov = 60.;
   main_camera.aspect = iResolution.x/iResolution.y;
   main_camera.pos = vec3(0, 0, 3);
 
@@ -81,9 +101,13 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     // the normal and the light direction.
     float dif = clamp(dot(normal, lightDirection), 0., 1.);
 
+    vec2 uv = uvSphere(p);
+    vec3 obj_col = texture(iChannel0, uv).xyz;
+    //vec3 obj_col = vec3(1, 0.58, 0.29);
+
     // Multiply the diffuse reflection value by an orange color and add a bit
     // of the background color to the sphere to blend it more with the background.
-    col = dif * vec3(1, 0.58, 0.29) + backgroundColor * .2;
+    col = dif * obj_col + backgroundColor * .2;
   }
 
   // Output to screen
